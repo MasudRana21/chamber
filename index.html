@@ -1,0 +1,676 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ChamberFlow প্রোটোটাইপ</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --card: #ffffff; --ink: #1b1f24; --muted: #5d6673; --line: #e2e5ea;
+    --brand: #1f5f8b; --brand-ink: #ffffff; --brand-soft: #e6f0f7;
+    --good: #2e7d4f; --good-soft: #e5f4ea; --warn: #a15c00; --warn-soft: #fff3e0; --bad: #b3261e;
+    --radius: 12px; --tap: 48px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121416; --card: #1c1f23; --ink: #e8eaed; --muted: #9aa3ad; --line: #2c3036;
+      --brand: #6fb1e0; --brand-ink: #0d1b26; --brand-soft: #1c2c38;
+      --good: #7fd19b; --good-soft: #1b2e22; --warn: #f0b264; --warn-soft: #33281a; --bad: #f28b82;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Noto Sans Bengali", "Hind Siliguri", "SolaimanLipi", system-ui, sans-serif; font-size: 16px; line-height: 1.45; }
+  .app { max-width: 520px; margin: 0 auto; min-height: 100vh; padding-bottom: 84px; }
+  header.top { position: sticky; top: 0; z-index: 5; background: var(--brand); color: var(--brand-ink);
+    padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  header.top h1 { font-size: 18px; margin: 0; }
+  header.top small { display: block; opacity: .85; font-size: 12px; }
+  .proto-tag { font-size: 11px; background: rgba(255,255,255,.2); padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+  main { padding: 12px 16px; }
+  .seg { display: flex; background: var(--card); border: 1px solid var(--line); border-radius: 99px; padding: 4px; gap: 4px; margin-bottom: 12px; }
+  .seg button { flex: 1; min-height: 40px; border: 0; border-radius: 99px; background: transparent; color: var(--ink); font: inherit; font-size: 15px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--brand); color: var(--brand-ink); font-weight: 600; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; margin-bottom: 12px; }
+  .court-h { font-weight: 700; font-size: 15px; margin: 0 0 8px; display: flex; justify-content: space-between; gap: 8px; }
+  .court-h span { color: var(--muted); font-weight: 400; font-size: 13px; white-space: nowrap; }
+  .item { border-top: 1px solid var(--line); padding: 10px 0; display: flex; gap: 10px; align-items: flex-start; }
+  .item:first-of-type { border-top: 0; }
+  .item .body { flex: 1; min-width: 0; }
+  .caseno { font-weight: 600; }
+  .parties { color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+  .badge { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 99px; background: var(--brand-soft); color: var(--brand); margin-top: 4px; }
+  .badge.done { background: var(--good-soft); color: var(--good); }
+  .badge.warn { background: var(--warn-soft); color: var(--warn); }
+  .btn { min-height: var(--tap); padding: 0 16px; border-radius: 10px; border: 1px solid var(--brand); background: var(--brand); color: var(--brand-ink);
+    font: inherit; font-weight: 600; cursor: pointer; }
+  .btn.ghost { background: transparent; color: var(--brand); }
+  .btn.small { min-height: 40px; padding: 0 12px; font-size: 14px; }
+  .btn.block { width: 100%; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .muted { color: var(--muted); font-size: 14px; }
+  .empty { text-align: center; color: var(--muted); padding: 24px 8px; }
+  nav.bottom { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); border-top: 1px solid var(--line); z-index: 6; }
+  nav.bottom .inner { max-width: 520px; margin: 0 auto; display: flex; }
+  nav.bottom button { flex: 1; min-height: 64px; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; padding-bottom: env(safe-area-inset-bottom); }
+  nav.bottom button .ic { display: block; font-size: 20px; line-height: 1.2; }
+  nav.bottom button[aria-current="page"] { color: var(--brand); font-weight: 700; }
+  label.f { display: block; font-size: 14px; color: var(--muted); margin: 12px 0 4px; }
+  input, select, textarea { width: 100%; min-height: var(--tap); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px;
+    background: var(--card); color: var(--ink); font: inherit; }
+  textarea { min-height: 72px; resize: vertical; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { min-height: 44px; padding: 0 14px; border-radius: 99px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; cursor: pointer; }
+  .chip[aria-pressed="true"] { border-color: var(--brand); background: var(--brand-soft); color: var(--brand); font-weight: 700; }
+  .sheet-bg { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 20; display: flex; align-items: flex-end; justify-content: center; }
+  .sheet { background: var(--card); width: 100%; max-width: 520px; max-height: 92vh; overflow: auto; border-radius: 16px 16px 0 0; padding: 16px; }
+  .sheet h2 { margin: 0 0 4px; font-size: 18px; }
+  .sms-prev { background: var(--bg); border: 1px dashed var(--line); border-radius: 10px; padding: 10px; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; min-height: var(--tap); }
+  .switch input { width: 24px; min-height: 24px; height: 24px; }
+  .toast { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; z-index: 30; max-width: 90vw; }
+  .timeline { list-style: none; padding: 0; margin: 0; }
+  .timeline li { border-left: 3px solid var(--line); padding: 4px 0 12px 12px; position: relative; }
+  .timeline li::before { content: ""; position: absolute; left: -7px; top: 9px; width: 11px; height: 11px; border-radius: 50%; background: var(--brand); }
+  .timeline li.future::before { background: var(--card); border: 2px solid var(--brand); }
+  table.l { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.l td, table.l th { padding: 6px 4px; border-bottom: 1px solid var(--line); text-align: left; }
+  table.l td.n { text-align: right; white-space: nowrap; }
+  .tabs { display: flex; gap: 4px; overflow-x: auto; margin: 8px 0 12px; }
+  .tabs button { min-height: 40px; border: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--muted); font: inherit; padding: 0 10px; cursor: pointer; white-space: nowrap; }
+  .tabs button[aria-selected="true"] { color: var(--brand); border-color: var(--brand); font-weight: 700; }
+  .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 8px; text-align: center; }
+  .kpi b { display: block; font-size: 22px; }
+  .kpi span { font-size: 12px; color: var(--muted); }
+  #print-area { display: none; }
+  @media print {
+    .app, nav.bottom, .toast, .sheet-bg { display: none !important; }
+    #print-area { display: block; color: #000; font-size: 12pt; }
+    #print-area table { width: 100%; border-collapse: collapse; }
+    #print-area td, #print-area th { border: 1px solid #000; padding: 4px 6px; text-align: left; }
+    #print-area h2 { font-size: 13pt; margin: 14px 0 6px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div><h1 data-i18n="appName"></h1><small id="chamber-name"></small></div>
+    <span class="proto-tag" data-i18n="protoTag"></span>
+  </header>
+  <main id="view" aria-live="polite"></main>
+</div>
+<nav class="bottom" aria-label="main">
+  <div class="inner">
+    <button data-nav="diary" data-testid="nav-diary"><span class="ic">📅</span><span data-i18n="navDiary"></span></button>
+    <button data-nav="cases" data-testid="nav-cases"><span class="ic">📁</span><span data-i18n="navCases"></span></button>
+    <button data-nav="tasks" data-testid="nav-tasks"><span class="ic">✅</span><span data-i18n="navTasks"></span></button>
+    <button data-nav="more" data-testid="nav-more"><span class="ic">⋯</span><span data-i18n="navMore"></span></button>
+  </div>
+</nav>
+<div id="print-area"></div>
+
+<script>
+"use strict";
+/* ChamberFlow clickable prototype — sample data only. Not for real client data. */
+
+const I18N = {
+  bn: {
+    appName: "ChamberFlow", protoTag: "প্রোটোটাইপ · নমুনা তথ্য",
+    navDiary: "ডায়েরি", navCases: "মামলা", navTasks: "কাজ", navMore: "আরও",
+    today: "আজ", tomorrow: "আগামীকাল", week: "এই সপ্তাহ",
+    hearings: "টি শুনানি", recordOutcome: "ফলাফল লিখুন", recorded: "লেখা হয়েছে", pending: "বাকি",
+    noHearings: "এই দিনে কোনো শুনানি নেই", vs: "বনাম",
+    outcome: "আজ কী হলো?", nextDate: "পরবর্তী তারিখ", nextPurpose: "পরবর্তী তারিখে কী", orderNote: "আদেশ / নোট (ঐচ্ছিক)",
+    smsClient: "মক্কেলকে SMS পাঠান", smsPreview: "SMS নমুনা", save: "সংরক্ষণ করুন", cancel: "বাতিল",
+    chars: "অক্ষর", parts: "SMS", needDate: "পরবর্তী তারিখ দিন", saved: "সংরক্ষিত", smsQueued: "SMS পাঠানোর জন্য প্রস্তুত",
+    seconds: "সেকেন্ড", searchCases: "মামলা খুঁজুন (নং, পক্ষ, আদালত)", newCase: "+ নতুন মামলা",
+    caseHearings: "শুনানি", caseDocs: "কাগজপত্র", caseLedger: "হিসাব", caseTasks: "কাজ",
+    client: "মক্কেল", court: "আদালত", stage: "পর্যায়", assigned: "দায়িত্বে",
+    addPhoto: "📷 ছবি তুলে যোগ করুন", docType: "ধরন", noDocs: "এখনো কোনো কাগজ নেই",
+    feeReceived: "ফি গ্রহণ", feeDue: "বকেয়া ফি", expense: "খরচ", amount: "টাকা", add: "যোগ করুন",
+    totalReceived: "মোট গ্রহণ", totalDue: "বকেয়া", totalExp: "খরচ",
+    feeSplit: "ফি ভাগ (অ্যাডভোকেটদের মধ্যে)",
+    myTasks: "সব কাজ", done: "সম্পন্ন", markDone: "সম্পন্ন", dueOn: "শেষ তারিখ", newTask: "+ নতুন কাজ", taskTitle: "কাজের বিবরণ", assignee: "কার দায়িত্ব",
+    back: "← ফিরে যান", caseType: "মামলার ধরন", caseNo: "মামলা নং", year: "সাল", plaintiff: "বাদী", defendant: "বিবাদী",
+    clientName: "মক্কেলের নাম", clientPhone: "মোবাইল নম্বর", firstDate: "প্রথম তারিখ", purpose: "উদ্দেশ্য",
+    consent: "মক্কেল তথ্য সংরক্ষণ ও SMS পাওয়ার সম্মতি দিয়েছেন", conflict: "স্বার্থের সংঘাত যাচাই", conflictFound: "সতর্কতা: এই নাম অন্য মামলায় আছে",
+    conflictNone: "মিল পাওয়া যায়নি", create: "মামলা তৈরি করুন", fillRequired: "আদালত, মামলা নং, বাদী, বিবাদী ও প্রথম তারিখ দিন",
+    language: "ভাষা / Language", printDiary: "🖨 আগামীকালের ডায়েরি প্রিন্ট", smsLog: "SMS তালিকা", testLog: "পরীক্ষার ফলাফল (মোহরার টেস্ট)",
+    testHelp: "প্রতিটি 'ফলাফল লিখুন' কত সেকেন্ডে শেষ হলো। লক্ষ্য: ৬০ সেকেন্ডের কম।", reset: "নমুনা তথ্য আবার শুরু করুন",
+    resetConfirm: "সব পরিবর্তন মুছে নমুনা তথ্য ফিরিয়ে আনবেন?", noneYet: "এখনো কিছু নেই", avg: "গড়",
+    kpiToday: "আজ", kpiPending: "ফলাফল বাকি", kpiTasks: "খোলা কাজ",
+    note: "নোট", feedback: "মতামত লিখুন (কী ভালো/কী কঠিন)", saveFeedback: "মতামত সংরক্ষণ",
+    smsTpl: "প্রিয় {name}, আপনার মামলা {case} এর পরবর্তী তারিখ {date}, {court}। -{chamber}",
+    printTitle: "কারণ তালিকা", sl: "ক্রম"
+  },
+  en: {
+    appName: "ChamberFlow", protoTag: "Prototype · sample data",
+    navDiary: "Diary", navCases: "Cases", navTasks: "Tasks", navMore: "More",
+    today: "Today", tomorrow: "Tomorrow", week: "This week",
+    hearings: " hearings", recordOutcome: "Record outcome", recorded: "Recorded", pending: "Pending",
+    noHearings: "No hearings on this day", vs: "vs",
+    outcome: "What happened today?", nextDate: "Next date", nextPurpose: "Purpose of next date", orderNote: "Order / note (optional)",
+    smsClient: "SMS the client", smsPreview: "SMS preview", save: "Save", cancel: "Cancel",
+    chars: "chars", parts: "SMS", needDate: "Enter the next date", saved: "Saved", smsQueued: "SMS ready to send",
+    seconds: "seconds", searchCases: "Search cases (no., party, court)", newCase: "+ New case",
+    caseHearings: "Hearings", caseDocs: "Documents", caseLedger: "Ledger", caseTasks: "Tasks",
+    client: "Client", court: "Court", stage: "Stage", assigned: "Assigned",
+    addPhoto: "📷 Add photo", docType: "Type", noDocs: "No documents yet",
+    feeReceived: "Fee received", feeDue: "Fee due", expense: "Expense", amount: "Amount (৳)", add: "Add",
+    totalReceived: "Received", totalDue: "Due", totalExp: "Expenses",
+    feeSplit: "Fee split (between advocates)",
+    myTasks: "All tasks", done: "Done", markDone: "Mark done", dueOn: "Due", newTask: "+ New task", taskTitle: "Task", assignee: "Assignee",
+    back: "← Back", caseType: "Case type", caseNo: "Case no.", year: "Year", plaintiff: "Plaintiff", defendant: "Defendant",
+    clientName: "Client name", clientPhone: "Mobile number", firstDate: "First date", purpose: "Purpose",
+    consent: "Client consented to data storage and SMS", conflict: "Conflict check", conflictFound: "Warning: this name appears in another case",
+    conflictNone: "No match found", create: "Create case", fillRequired: "Enter court, case no., plaintiff, defendant and first date",
+    language: "Language / ভাষা", printDiary: "🖨 Print tomorrow's diary", smsLog: "SMS log", testLog: "Test results (Moharar test)",
+    testHelp: "Seconds taken for each 'Record outcome'. Target: under 60 seconds.", reset: "Reset sample data",
+    resetConfirm: "Discard all changes and restore sample data?", noneYet: "Nothing yet", avg: "Average",
+    kpiToday: "Today", kpiPending: "Outcome pending", kpiTasks: "Open tasks",
+    note: "Note", feedback: "Write feedback (what was easy/hard)", saveFeedback: "Save feedback",
+    smsTpl: "Dear {name}, next date of your case {case} is {date}, {court}. -{chamber}",
+    printTitle: "Cause list", sl: "#"
+  }
+};
+
+const COURTS = [
+  { id: "c1", bn: "যুগ্ম জেলা জজ আদালত-১", en: "Joint District Judge Court-1" },
+  { id: "c2", bn: "সিনিয়র সহকারী জজ আদালত, সদর", en: "Senior Asst. Judge Court, Sadar" },
+  { id: "c3", bn: "জেলা জজ আদালত", en: "District Judge Court" },
+  { id: "c4", bn: "সহকারী জজ আদালত, শ্রীমঙ্গল", en: "Asst. Judge Court, Sreemangal" }
+];
+const CASE_TYPES = [
+  { id: "title", bn: "দেওয়ানী (স্বত্ব) মোকদ্দমা", en: "Title Suit", short: { bn: "দেও.", en: "T.S." } },
+  { id: "partition", bn: "বাটোয়ারা মোকদ্দমা", en: "Partition Suit", short: { bn: "বাটো.", en: "P.S." } },
+  { id: "misc", bn: "বিবিধ মোকদ্দমা", en: "Misc. Case", short: { bn: "বিবিধ", en: "Misc." } },
+  { id: "appeal", bn: "দেওয়ানী আপীল", en: "Civil Appeal", short: { bn: "আপীল", en: "C.A." } }
+];
+const PURPOSES = [
+  { id: "summons", bn: "সমন জারি", en: "Service of summons" },
+  { id: "ws", bn: "জবাব দাখিল", en: "Written statement" },
+  { id: "issues", bn: "বিচার্য বিষয় গঠন", en: "Framing of issues" },
+  { id: "evidence", bn: "সাক্ষ্য গ্রহণ", en: "Evidence" },
+  { id: "argument", bn: "যুক্তিতর্ক", en: "Argument" },
+  { id: "order", bn: "আদেশের জন্য", en: "For order" },
+  { id: "judgment", bn: "রায়ের জন্য", en: "For judgment" }
+];
+const OUTCOMES = [
+  { id: "adjourned", bn: "মুলতবি", en: "Adjourned" },
+  { id: "heard", bn: "শুনানি হয়েছে", en: "Heard" },
+  { id: "order", bn: "আদেশ হয়েছে", en: "Order passed" },
+  { id: "judgment", bn: "রায় হয়েছে", en: "Judgment" },
+  { id: "notheard", bn: "ডাকা হয়নি", en: "Not called" }
+];
+const DOC_TYPES = [
+  { id: "plaint", bn: "আরজি", en: "Plaint" }, { id: "ws", bn: "জবাব", en: "Written statement" },
+  { id: "order", bn: "আদেশের কপি", en: "Order copy" }, { id: "deed", bn: "দলিল", en: "Deed" },
+  { id: "khatian", bn: "খতিয়ান/পর্চা", en: "Khatian/Record" }, { id: "other", bn: "অন্যান্য", en: "Other" }
+];
+
+const STORE_KEY = "chamberflow-proto-v1";
+let S = null;
+let ui = { view: "diary", diaryRange: "today", caseId: null, caseTab: "hearings", query: "" };
+
+/* ---------- utils ---------- */
+const $ = (sel, el = document) => el.querySelector(sel);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const uid = () => Math.random().toString(36).slice(2, 10);
+function isoDay(offset = 0) {
+  const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + offset);
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function t(k) { return (I18N[S.lang] && I18N[S.lang][k]) || I18N.en[k] || k; }
+function L(obj) { return obj ? (obj[S.lang] || obj.en) : ""; }
+function num(n) { return S.lang === "bn" ? Number(n).toLocaleString("bn-BD") : Number(n).toLocaleString("en-US"); }
+function fmtDate(iso, long) {
+  const d = new Date(iso + "T12:00:00");
+  return d.toLocaleDateString(S.lang === "bn" ? "bn-BD" : "en-GB", long ? { weekday: "long", day: "numeric", month: "long", year: "numeric" } : { day: "numeric", month: "short", year: "numeric" });
+}
+const byId = (arr, id) => arr.find((x) => x.id === id);
+const court = (id) => byId(COURTS, id);
+const caseType = (id) => byId(CASE_TYPES, id);
+const purpose = (id) => byId(PURPOSES, id);
+function caseLabel(c) { return `${L(caseType(c.type).short)} ${num(c.no)}/${S.lang === "bn" ? num(c.year).replace(/,/g, "") : c.year}`; }
+function member(id) { return byId(S.members, id); }
+
+function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) { /* storage unavailable: prototype still works in memory */ } }
+function load() {
+  try { const raw = localStorage.getItem(STORE_KEY); if (raw) return JSON.parse(raw); } catch (e) { /* ignore */ }
+  return null;
+}
+
+function seed() {
+  const members = [
+    { id: "m1", bn: "অ্যাড. সিনিয়র (চেম্বার প্রধান)", en: "Adv. Senior (Head)", role: "owner" },
+    { id: "m2", bn: "অ্যাড. জুনিয়র ১", en: "Adv. Junior 1", role: "advocate" },
+    { id: "m3", bn: "অ্যাড. জুনিয়র ২", en: "Adv. Junior 2", role: "advocate" },
+    { id: "m4", bn: "মোহরার", en: "Moharar", role: "clerk" }
+  ];
+  const clients = [
+    { id: "k1", name: "আব্দুল করিম", phone: "01700000001", nrb: false },
+    { id: "k2", name: "রহিমা খাতুন", phone: "01800000002", nrb: false },
+    { id: "k3", name: "জাহিদ মিয়া", phone: "447700000003", nrb: true },
+    { id: "k4", name: "সুফিয়া বেগম", phone: "01900000004", nrb: false },
+    { id: "k5", name: "নূরুল ইসলাম", phone: "01600000005", nrb: false },
+    { id: "k6", name: "মাসুক আহমদ", phone: "971500000006", nrb: true }
+  ];
+  const cases = [
+    { id: "s1", type: "title", no: 112, year: 2021, court: "c1", plaintiff: "আব্দুল করিম", defendant: "হাবিবুর রহমান গং", client: "k1", stage: "evidence", assigned: ["m1", "m2"] },
+    { id: "s2", type: "partition", no: 45, year: 2019, court: "c2", plaintiff: "রহিমা খাতুন", defendant: "আব্দুল মালিক গং", client: "k2", stage: "argument", assigned: ["m1"] },
+    { id: "s3", type: "title", no: 230, year: 2023, court: "c2", plaintiff: "জাহিদ মিয়া", defendant: "সেলিম উদ্দিন", client: "k3", stage: "ws", assigned: ["m2"] },
+    { id: "s4", type: "appeal", no: 18, year: 2024, court: "c3", plaintiff: "সুফিয়া বেগম", defendant: "বাংলাদেশ সরকার গং", client: "k4", stage: "order", assigned: ["m1", "m3"] },
+    { id: "s5", type: "misc", no: 7, year: 2025, court: "c4", plaintiff: "নূরুল ইসলাম", defendant: "কামাল হোসেন", client: "k5", stage: "summons", assigned: ["m3"] },
+    { id: "s6", type: "partition", no: 88, year: 2020, court: "c1", plaintiff: "মাসুক আহমদ", defendant: "ফজলুল হক গং", client: "k6", stage: "issues", assigned: ["m1", "m2"] },
+    { id: "s7", type: "title", no: 301, year: 2022, court: "c3", plaintiff: "আব্দুল মালিক", defendant: "আব্দুল করিম", client: null, stage: "evidence", assigned: ["m1"] }
+  ];
+  const H = (caseId, off, p, outcome) => ({ id: uid(), caseId, date: isoDay(off), purpose: p, outcome: outcome || null, note: "", nextId: null });
+  const past = [H("s1", -35, "ws", "adjourned"), H("s2", -28, "evidence", "heard"), H("s6", -20, "ws", "adjourned")];
+  const hearings = [
+    ...past,
+    H("s1", 0, "evidence"), H("s2", 0, "argument"), H("s3", 0, "ws"), H("s6", 0, "issues"),
+    H("s4", 1, "order"), H("s5", 1, "summons"), H("s7", 1, "evidence")
+  ];
+  const tasks = [
+    { id: uid(), caseId: "s1", title: "সাক্ষীর তালিকা প্রস্তুত করা", assignee: "m2", due: isoDay(0), done: false },
+    { id: uid(), caseId: "s4", title: "আদেশের সার্টিফাইড কপির আবেদন", assignee: "m4", due: isoDay(1), done: false },
+    { id: uid(), caseId: "s3", title: "জবাবের খসড়া", assignee: "m2", due: isoDay(2), done: false },
+    { id: uid(), caseId: "s2", title: "কোর্ট ফি জমা", assignee: "m4", due: isoDay(-1), done: true }
+  ];
+  const ledger = [
+    { id: uid(), caseId: "s1", kind: "received", amount: 5000, date: isoDay(-40), note: "" },
+    { id: uid(), caseId: "s1", kind: "due", amount: 3000, date: isoDay(-40), note: "" },
+    { id: uid(), caseId: "s1", kind: "expense", amount: 350, date: isoDay(-35), note: "নকল খরচ" },
+    { id: uid(), caseId: "s2", kind: "received", amount: 8000, date: isoDay(-60), note: "" }
+  ];
+  const docs = [
+    { id: uid(), caseId: "s1", type: "plaint", name: "arji.jpg", date: isoDay(-400) },
+    { id: uid(), caseId: "s1", type: "khatian", name: "khatian-123.jpg", date: isoDay(-400) },
+    { id: uid(), caseId: "s2", type: "order", name: "order-2024-05.jpg", date: isoDay(-90) }
+  ];
+  const splits = { s1: [{ member: "m1", pct: 70 }, { member: "m2", pct: 30 }] };
+  return { lang: "bn", chamber: { bn: "অ্যাডভোকেট চেম্বার, মৌলভীবাজার", en: "Advocate Chamber, Moulvibazar" },
+    members, clients, cases, hearings, tasks, ledger, docs, splits, sms: [], timings: [], feedback: [] };
+}
+
+/* ---------- toast ---------- */
+let toastTimer = null;
+function toast(msg) {
+  let el = $(".toast");
+  if (!el) { el = document.createElement("div"); el.className = "toast"; el.setAttribute("role", "status"); document.body.appendChild(el); }
+  el.textContent = msg;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.remove(), 2600);
+}
+
+/* ---------- render shell ---------- */
+function render() {
+  document.documentElement.lang = S.lang;
+  document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.dataset.i18n); });
+  $("#chamber-name").textContent = L(S.chamber);
+  document.querySelectorAll("nav.bottom button").forEach((b) => {
+    const active = b.dataset.nav === ui.view || (ui.view === "case" && b.dataset.nav === "cases") || (ui.view === "newcase" && b.dataset.nav === "cases");
+    if (active) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+  });
+  const v = $("#view");
+  if (ui.view === "diary") v.innerHTML = viewDiary();
+  else if (ui.view === "cases") v.innerHTML = viewCases();
+  else if (ui.view === "case") v.innerHTML = viewCase();
+  else if (ui.view === "newcase") v.innerHTML = viewNewCase();
+  else if (ui.view === "tasks") v.innerHTML = viewTasks();
+  else v.innerHTML = viewMore();
+  bindView();
+}
+
+/* ---------- diary ---------- */
+function diaryDays() {
+  if (ui.diaryRange === "today") return [isoDay(0)];
+  if (ui.diaryRange === "tomorrow") return [isoDay(1)];
+  return [0, 1, 2, 3, 4, 5, 6].map(isoDay);
+}
+function hearingsOn(day) { return S.hearings.filter((h) => h.date === day); }
+
+function viewDiary() {
+  const todayH = hearingsOn(isoDay(0));
+  const openTasks = S.tasks.filter((x) => !x.done).length;
+  let html = `<div class="kpis">
+    <div class="kpi"><b>${num(todayH.length)}</b><span>${t("kpiToday")}</span></div>
+    <div class="kpi"><b>${num(todayH.filter((h) => !h.outcome).length)}</b><span>${t("kpiPending")}</span></div>
+    <div class="kpi"><b>${num(openTasks)}</b><span>${t("kpiTasks")}</span></div></div>`;
+  html += `<div class="seg" role="group">
+    ${["today", "tomorrow", "week"].map((r) => `<button data-range="${r}" data-testid="diary-range-${r}" aria-pressed="${ui.diaryRange === r}">${t(r)}</button>`).join("")}</div>`;
+  for (const day of diaryDays()) {
+    const list = hearingsOn(day);
+    if (ui.diaryRange === "week" && !list.length) continue;
+    html += `<p class="muted" style="margin:4px 0 8px"><b>${esc(fmtDate(day, true))}</b> · ${num(list.length)}${t("hearings")}</p>`;
+    if (!list.length) { html += `<div class="card empty">${t("noHearings")}</div>`; continue; }
+    for (const ct of COURTS) {
+      const inCourt = list.filter((h) => byId(S.cases, h.caseId).court === ct.id);
+      if (!inCourt.length) continue;
+      html += `<section class="card"><h3 class="court-h">${esc(L(ct))}<span>${num(inCourt.length)}${t("hearings")}</span></h3>`;
+      for (const h of inCourt) {
+        const c = byId(S.cases, h.caseId);
+        const isPastOrToday = h.date <= isoDay(0);
+        html += `<div class="item">
+          <div class="body">
+            <a href="#" class="caseno" data-open-case="${c.id}" data-testid="diary-case-${c.id}">${esc(caseLabel(c))}</a>
+            <div class="parties">${esc(c.plaintiff)} ${t("vs")} ${esc(c.defendant)}</div>
+            <span class="badge">${esc(L(purpose(h.purpose)))}</span>
+            ${h.outcome ? `<span class="badge done">✓ ${esc(L(byId(OUTCOMES, h.outcome)))}</span>` : (isPastOrToday ? `<span class="badge warn">${t("pending")}</span>` : "")}
+          </div>
+          ${!h.outcome && isPastOrToday ? `<button class="btn small" data-outcome="${h.id}" data-testid="record-outcome-${h.id}">${t("recordOutcome")}</button>` : ""}
+        </div>`;
+      }
+      html += `</section>`;
+    }
+  }
+  return html;
+}
+
+/* ---------- outcome sheet ---------- */
+function smsText(c, client, nextDate) {
+  return t("smsTpl").replace("{name}", client ? client.name : "")
+    .replace("{case}", caseLabel(c)).replace("{date}", nextDate ? fmtDate(nextDate) : "...")
+    .replace("{court}", L(court(c.court))).replace("{chamber}", L(S.chamber).split(",")[0]);
+}
+function smsParts(s) {
+  const unicode = /[^\x00-\x7F]/.test(s);
+  const single = unicode ? 70 : 160, multi = unicode ? 67 : 153;
+  const n = [...s].length;
+  return { n, parts: n <= single ? 1 : Math.ceil(n / multi) };
+}
+
+function openOutcome(hid) {
+  const h = byId(S.hearings, hid);
+  const c = byId(S.cases, h.caseId);
+  const client = c.client ? byId(S.clients, c.client) : null;
+  const started = performance.now();
+  const st = { outcome: "adjourned", nextDate: "", nextPurpose: h.purpose, note: "", sms: !!client };
+  const bg = document.createElement("div");
+  bg.className = "sheet-bg";
+  bg.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <h2 id="sheet-title">${esc(caseLabel(c))}</h2>
+    <div class="parties">${esc(c.plaintiff)} ${t("vs")} ${esc(c.defendant)} · ${esc(L(court(c.court)))}</div>
+    <label class="f">${t("outcome")}</label>
+    <div class="chips" id="oc-chips">${OUTCOMES.map((o) => `<button type="button" class="chip" data-oc="${o.id}" data-testid="outcome-${o.id}" aria-pressed="${o.id === st.outcome}">${esc(L(o))}</button>`).join("")}</div>
+    <label class="f" for="oc-date">${t("nextDate")}</label>
+    <input type="date" id="oc-date" min="${isoDay(1)}" data-testid="outcome-next-date">
+    <div class="row" style="margin-top:6px">${[7, 14, 30].map((d) => `<button type="button" class="chip" data-plus="${d}" data-testid="outcome-plus-${d}">+${num(d)} ${S.lang === "bn" ? "দিন" : "days"}</button>`).join("")}</div>
+    <label class="f" for="oc-purpose">${t("nextPurpose")}</label>
+    <select id="oc-purpose" data-testid="outcome-next-purpose">${PURPOSES.map((p) => `<option value="${p.id}" ${p.id === st.nextPurpose ? "selected" : ""}>${esc(L(p))}</option>`).join("")}</select>
+    <label class="f" for="oc-note">${t("orderNote")}</label>
+    <textarea id="oc-note" data-testid="outcome-note"></textarea>
+    <div class="switch"><label for="oc-sms">${t("smsClient")}${client ? ` — ${esc(client.name)}` : ""}</label>
+      <input type="checkbox" id="oc-sms" ${st.sms ? "checked" : ""} ${client ? "" : "disabled"} data-testid="outcome-sms-toggle"></div>
+    <div id="oc-sms-box"></div>
+    <div class="row" style="margin-top:16px">
+      <button class="btn ghost" id="oc-cancel" data-testid="outcome-cancel" style="flex:1">${t("cancel")}</button>
+      <button class="btn" id="oc-save" data-testid="outcome-save" style="flex:2">${t("save")}</button>
+    </div></div>`;
+  document.body.appendChild(bg);
+  const dateEl = $("#oc-date", bg);
+  const refreshSms = () => {
+    const box = $("#oc-sms-box", bg);
+    if (!st.sms || !client) { box.innerHTML = ""; return; }
+    const txt = smsText(c, client, st.nextDate);
+    const p = smsParts(txt);
+    box.innerHTML = `<p class="muted" style="margin:4px 0">${t("smsPreview")} · ${num(p.n)} ${t("chars")} · ${num(p.parts)} ${t("parts")}</p><div class="sms-prev">${esc(txt)}</div>`;
+  };
+  refreshSms();
+  bg.addEventListener("click", (e) => {
+    const oc = e.target.closest("[data-oc]");
+    if (oc) { st.outcome = oc.dataset.oc; bg.querySelectorAll("[data-oc]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.oc === st.outcome)); return; }
+    const plus = e.target.closest("[data-plus]");
+    if (plus) { const base = new Date(h.date + "T12:00:00"); base.setDate(base.getDate() + Number(plus.dataset.plus));
+      st.nextDate = base.toISOString().slice(0, 10); dateEl.value = st.nextDate; refreshSms(); return; }
+    if (e.target === bg || e.target.id === "oc-cancel") { bg.remove(); return; }
+    if (e.target.id === "oc-save") {
+      const terminal = st.outcome === "judgment";
+      if (!st.nextDate && !terminal) { toast(t("needDate")); dateEl.focus(); return; }
+      h.outcome = st.outcome; h.note = $("#oc-note", bg).value.trim();
+      if (st.nextDate) {
+        const nh = { id: uid(), caseId: c.id, date: st.nextDate, purpose: $("#oc-purpose", bg).value, outcome: null, note: "", nextId: null };
+        S.hearings.push(nh); h.nextId = nh.id; c.stage = nh.purpose;
+      }
+      let msg = t("saved");
+      if (st.sms && client && st.nextDate) {
+        S.sms.unshift({ id: uid(), to: client.phone, name: client.name, body: smsText(c, client, st.nextDate), at: new Date().toISOString(), status: "queued" });
+        msg += " · " + t("smsQueued");
+      }
+      const secs = Math.round((performance.now() - started) / 1000);
+      S.timings.unshift({ at: new Date().toISOString(), secs, caseLabel: caseLabel(c) });
+      save(); bg.remove(); render();
+      toast(`${msg} · ${num(secs)} ${t("seconds")}`);
+    }
+  });
+  dateEl.addEventListener("change", () => { st.nextDate = dateEl.value; refreshSms(); });
+  $("#oc-sms", bg).addEventListener("change", (e) => { st.sms = e.target.checked; refreshSms(); });
+  bg.addEventListener("keydown", (e) => { if (e.key === "Escape") bg.remove(); });
+  $("[data-oc]", bg).focus();
+}
+
+/* ---------- cases ---------- */
+function viewCases() {
+  const q = ui.query.trim().toLowerCase();
+  const list = S.cases.filter((c) => !q || [caseLabel(c), c.plaintiff, c.defendant, L(court(c.court)), String(c.no)].join(" ").toLowerCase().includes(q));
+  let html = `<div class="row" style="margin-bottom:12px">
+    <input type="search" id="case-q" placeholder="${esc(t("searchCases"))}" value="${esc(ui.query)}" data-testid="case-search" style="flex:1">
+    <button class="btn" data-nav-to="newcase" data-testid="case-new">${t("newCase")}</button></div>`;
+  if (!list.length) return html + `<div class="card empty">${t("noneYet")}</div>`;
+  html += list.map((c) => {
+    const next = S.hearings.filter((h) => h.caseId === c.id && h.date >= isoDay(0) && !h.outcome).sort((a, b) => a.date.localeCompare(b.date))[0];
+    return `<a href="#" class="card" style="display:block;color:inherit;text-decoration:none" data-open-case="${c.id}" data-testid="case-row-${c.id}">
+      <div class="caseno">${esc(caseLabel(c))} · <span class="muted">${esc(L(court(c.court)))}</span></div>
+      <div class="parties">${esc(c.plaintiff)} ${t("vs")} ${esc(c.defendant)}</div>
+      ${next ? `<span class="badge">${t("nextDate")}: ${esc(fmtDate(next.date))}</span>` : ""}
+      <span class="badge">${esc(L(purpose(c.stage)))}</span></a>`;
+  }).join("");
+  return html;
+}
+
+function viewCase() {
+  const c = byId(S.cases, ui.caseId);
+  if (!c) { ui.view = "cases"; return viewCases(); }
+  const client = c.client ? byId(S.clients, c.client) : null;
+  let html = `<button class="btn ghost small" data-nav-to="cases" data-testid="case-back">${t("back")}</button>
+    <div class="card" style="margin-top:8px">
+      <div class="caseno" style="font-size:18px">${esc(caseLabel(c))}</div>
+      <div class="muted">${esc(L(caseType(c.type)))} · ${esc(L(court(c.court)))}</div>
+      <div style="margin-top:6px">${esc(c.plaintiff)} <span class="muted">${t("vs")}</span> ${esc(c.defendant)}</div>
+      <div class="muted" style="margin-top:6px">${t("client")}: ${client ? esc(client.name) + (client.nrb ? " 🌍" : "") : "—"} · ${t("stage")}: ${esc(L(purpose(c.stage)))}</div>
+      <div class="muted">${t("assigned")}: ${c.assigned.map((m) => esc(L(member(m)))).join(", ")}</div>
+    </div>
+    <div class="tabs" role="tablist">${["hearings", "docs", "ledger", "tasks"].map((k) => `<button role="tab" data-ctab="${k}" data-testid="case-tab-${k}" aria-selected="${ui.caseTab === k}">${t("case" + k.charAt(0).toUpperCase() + k.slice(1))}</button>`).join("")}</div>`;
+  if (ui.caseTab === "hearings") {
+    const hs = S.hearings.filter((h) => h.caseId === c.id).sort((a, b) => b.date.localeCompare(a.date));
+    html += `<div class="card"><ul class="timeline">${hs.map((h) => `<li class="${h.date > isoDay(0) ? "future" : ""}">
+      <b>${esc(fmtDate(h.date))}</b> · ${esc(L(purpose(h.purpose)))}
+      ${h.outcome ? `<div class="muted">→ ${esc(L(byId(OUTCOMES, h.outcome)))}${h.note ? " · " + esc(h.note) : ""}</div>` : ""}
+      ${!h.outcome && h.date <= isoDay(0) ? `<div><button class="btn small" data-outcome="${h.id}" data-testid="case-record-${h.id}">${t("recordOutcome")}</button></div>` : ""}
+    </li>`).join("")}</ul></div>`;
+  } else if (ui.caseTab === "docs") {
+    const ds = S.docs.filter((d) => d.caseId === c.id);
+    html += `<div class="card">
+      <label class="f" for="doc-type">${t("docType")}</label>
+      <select id="doc-type" data-testid="doc-type">${DOC_TYPES.map((d) => `<option value="${d.id}">${esc(L(d))}</option>`).join("")}</select>
+      <label class="btn block" style="display:flex;align-items:center;justify-content:center;margin-top:8px" data-testid="doc-add">${t("addPhoto")}
+        <input type="file" id="doc-file" accept="image/*,application/pdf" capture="environment" style="display:none"></label></div>`;
+    html += ds.length ? `<div class="card">${ds.map((d) => `<div class="item"><div class="body"><b>${esc(L(byId(DOC_TYPES, d.type)))}</b><div class="muted">${esc(d.name)} · ${esc(fmtDate(d.date))}</div></div></div>`).join("")}</div>`
+      : `<div class="card empty">${t("noDocs")}</div>`;
+  } else if (ui.caseTab === "ledger") {
+    const es = S.ledger.filter((x) => x.caseId === c.id);
+    const sum = (k) => es.filter((x) => x.kind === k).reduce((s, x) => s + x.amount, 0);
+    const kinds = { received: t("feeReceived"), due: t("feeDue"), expense: t("expense") };
+    html += `<div class="kpis"><div class="kpi"><b>৳${num(sum("received"))}</b><span>${t("totalReceived")}</span></div>
+      <div class="kpi"><b>৳${num(sum("due"))}</b><span>${t("totalDue")}</span></div>
+      <div class="kpi"><b>৳${num(sum("expense"))}</b><span>${t("totalExp")}</span></div></div>
+      <div class="card"><table class="l"><tbody>${es.map((x) => `<tr><td>${esc(fmtDate(x.date))}</td><td>${esc(kinds[x.kind])}${x.note ? " · " + esc(x.note) : ""}</td><td class="n">৳${num(x.amount)}</td></tr>`).join("") || `<tr><td class="empty">${t("noneYet")}</td></tr>`}</tbody></table>
+      <div class="row" style="margin-top:12px">
+        <select id="lg-kind" data-testid="ledger-kind" style="flex:1">${Object.entries(kinds).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join("")}</select>
+        <input type="number" id="lg-amt" inputmode="numeric" min="1" placeholder="${esc(t("amount"))}" data-testid="ledger-amount" style="flex:1">
+        <button class="btn" id="lg-add" data-testid="ledger-add">${t("add")}</button></div></div>`;
+    const split = S.splits[c.id];
+    if (split) {
+      const rec = sum("received");
+      html += `<div class="card"><b>${t("feeSplit")}</b><table class="l">${split.map((s) => `<tr><td>${esc(L(member(s.member)))}</td><td class="n">${num(s.pct)}%</td><td class="n">৳${num(Math.round(rec * s.pct / 100))}</td></tr>`).join("")}</table></div>`;
+    }
+  } else {
+    html += taskList(S.tasks.filter((x) => x.caseId === c.id), c.id);
+  }
+  return html;
+}
+
+function viewNewCase() {
+  return `<button class="btn ghost small" data-nav-to="cases" data-testid="newcase-back">${t("back")}</button>
+  <form class="card" id="nc-form" style="margin-top:8px" novalidate>
+    <label class="f" for="nc-court">${t("court")}</label>
+    <select id="nc-court" data-testid="newcase-court">${COURTS.map((c) => `<option value="${c.id}">${esc(L(c))}</option>`).join("")}</select>
+    <label class="f" for="nc-type">${t("caseType")}</label>
+    <select id="nc-type" data-testid="newcase-type">${CASE_TYPES.map((c) => `<option value="${c.id}">${esc(L(c))}</option>`).join("")}</select>
+    <div class="row"><div style="flex:1"><label class="f" for="nc-no">${t("caseNo")}</label><input id="nc-no" inputmode="numeric" data-testid="newcase-no"></div>
+      <div style="flex:1"><label class="f" for="nc-year">${t("year")}</label><input id="nc-year" inputmode="numeric" value="${new Date().getFullYear()}" data-testid="newcase-year"></div></div>
+    <label class="f" for="nc-pl">${t("plaintiff")}</label><input id="nc-pl" data-testid="newcase-plaintiff">
+    <label class="f" for="nc-df">${t("defendant")}</label><input id="nc-df" data-testid="newcase-defendant">
+    <div id="nc-conflict" class="muted" style="margin-top:6px" aria-live="polite"></div>
+    <label class="f" for="nc-cn">${t("clientName")}</label><input id="nc-cn" data-testid="newcase-client-name">
+    <label class="f" for="nc-cp">${t("clientPhone")}</label><input id="nc-cp" type="tel" inputmode="tel" data-testid="newcase-client-phone">
+    <div class="switch"><label for="nc-consent">${t("consent")}</label><input type="checkbox" id="nc-consent" data-testid="newcase-consent"></div>
+    <div class="row"><div style="flex:1"><label class="f" for="nc-date">${t("firstDate")}</label><input type="date" id="nc-date" data-testid="newcase-first-date"></div>
+      <div style="flex:1"><label class="f" for="nc-purpose">${t("purpose")}</label><select id="nc-purpose" data-testid="newcase-purpose">${PURPOSES.map((p) => `<option value="${p.id}">${esc(L(p))}</option>`).join("")}</select></div></div>
+    <button class="btn block" type="submit" style="margin-top:16px" data-testid="newcase-submit">${t("create")}</button>
+  </form>`;
+}
+
+/* ---------- tasks ---------- */
+function taskList(list, caseId) {
+  const sorted = [...list].sort((a, b) => (a.done - b.done) || a.due.localeCompare(b.due));
+  let html = `<div class="card">${sorted.map((x) => {
+    const c = byId(S.cases, x.caseId);
+    const late = !x.done && x.due < isoDay(0);
+    return `<div class="item"><div class="body" style="${x.done ? "opacity:.6;text-decoration:line-through" : ""}">
+      <b>${esc(x.title)}</b>
+      <div class="muted">${c ? esc(caseLabel(c)) + " · " : ""}${esc(L(member(x.assignee)))} · ${t("dueOn")}: ${esc(fmtDate(x.due))}</div>
+      ${late ? `<span class="badge warn">!</span>` : ""}</div>
+      ${x.done ? `<span class="badge done">✓ ${t("done")}</span>` : `<button class="btn small ghost" data-done="${x.id}" data-testid="task-done-${x.id}">${t("markDone")}</button>`}</div>`;
+  }).join("") || `<div class="empty">${t("noneYet")}</div>`}</div>`;
+  html += `<form class="card" id="task-form" data-case="${caseId || ""}" novalidate>
+    <label class="f" for="tk-title">${t("taskTitle")}</label><input id="tk-title" data-testid="task-title">
+    ${caseId ? "" : `<label class="f" for="tk-case">${t("navCases")}</label><select id="tk-case" data-testid="task-case">${S.cases.map((c) => `<option value="${c.id}">${esc(caseLabel(c))} · ${esc(c.plaintiff)}</option>`).join("")}</select>`}
+    <div class="row"><div style="flex:1"><label class="f" for="tk-who">${t("assignee")}</label><select id="tk-who" data-testid="task-assignee">${S.members.map((m) => `<option value="${m.id}">${esc(L(m))}</option>`).join("")}</select></div>
+      <div style="flex:1"><label class="f" for="tk-due">${t("dueOn")}</label><input type="date" id="tk-due" value="${isoDay(1)}" data-testid="task-due"></div></div>
+    <button class="btn block" type="submit" style="margin-top:12px" data-testid="task-add">${t("newTask")}</button></form>`;
+  return html;
+}
+function viewTasks() { return `<p class="muted"><b>${t("myTasks")}</b></p>` + taskList(S.tasks, null); }
+
+/* ---------- more ---------- */
+function viewMore() {
+  const avg = S.timings.length ? Math.round(S.timings.reduce((s, x) => s + x.secs, 0) / S.timings.length) : null;
+  return `<div class="card"><label class="f">${t("language")}</label>
+      <div class="seg" role="group"><button data-lang="bn" data-testid="lang-bn" aria-pressed="${S.lang === "bn"}">বাংলা</button><button data-lang="en" data-testid="lang-en" aria-pressed="${S.lang === "en"}">English</button></div>
+      <button class="btn block" id="print-btn" data-testid="print-diary">${t("printDiary")}</button></div>
+    <div class="card"><b>${t("testLog")}</b><p class="muted">${t("testHelp")}</p>
+      ${S.timings.length ? `<p>${t("avg")}: <b>${num(avg)} ${t("seconds")}</b></p><table class="l">${S.timings.slice(0, 20).map((x) => `<tr><td>${esc(new Date(x.at).toLocaleString(S.lang === "bn" ? "bn-BD" : "en-GB"))}</td><td>${esc(x.caseLabel)}</td><td class="n" style="color:${x.secs <= 60 ? "var(--good)" : "var(--bad)"}">${num(x.secs)}s</td></tr>`).join("")}</table>` : `<p class="muted">${t("noneYet")}</p>`}
+      <label class="f" for="fb">${t("feedback")}</label><textarea id="fb" data-testid="feedback-text"></textarea>
+      <button class="btn block" id="fb-save" style="margin-top:8px" data-testid="feedback-save">${t("saveFeedback")}</button>
+      ${S.feedback.map((f) => `<p class="muted">• ${esc(f.text)}</p>`).join("")}</div>
+    <div class="card"><b>${t("smsLog")}</b>${S.sms.length ? S.sms.slice(0, 20).map((m) => `<div class="item"><div class="body"><div class="muted">${esc(m.name)} · ${esc(m.to)}</div><div class="sms-prev">${esc(m.body)}</div></div></div>`).join("") : `<p class="muted">${t("noneYet")}</p>`}</div>
+    <button class="btn ghost block" id="reset-btn" data-testid="reset-data">${t("reset")}</button>`;
+}
+
+function printDiary() {
+  const day = isoDay(1);
+  const list = hearingsOn(day);
+  let html = `<h1 style="font-size:15pt;margin:0">${esc(L(S.chamber))}</h1><p>${t("printTitle")} — ${esc(fmtDate(day, true))}</p>`;
+  for (const ct of COURTS) {
+    const inCourt = list.filter((h) => byId(S.cases, h.caseId).court === ct.id);
+    if (!inCourt.length) continue;
+    html += `<h2>${esc(L(ct))}</h2><table><tr><th>${t("sl")}</th><th>${t("caseNo")}</th><th>${t("plaintiff")} ${t("vs")} ${t("defendant")}</th><th>${t("purpose")}</th><th>${t("note")}</th></tr>`;
+    inCourt.forEach((h, i) => { const c = byId(S.cases, h.caseId);
+      html += `<tr><td>${num(i + 1)}</td><td>${esc(caseLabel(c))}</td><td>${esc(c.plaintiff)} ${t("vs")} ${esc(c.defendant)}</td><td>${esc(L(purpose(h.purpose)))}</td><td style="width:30%"></td></tr>`; });
+    html += `</table>`;
+  }
+  if (!list.length) html += `<p>${t("noHearings")}</p>`;
+  $("#print-area").innerHTML = html;
+  window.print();
+}
+
+/* ---------- bindings ---------- */
+function bindView() {
+  const v = $("#view");
+  const q = $("#case-q", v);
+  if (q) q.addEventListener("input", () => { ui.query = q.value; const pos = q.selectionStart; render(); const nq = $("#case-q"); nq.focus(); nq.setSelectionRange(pos, pos); });
+  const docFile = $("#doc-file", v);
+  if (docFile) docFile.addEventListener("change", () => {
+    const f = docFile.files && docFile.files[0]; if (!f) return;
+    S.docs.unshift({ id: uid(), caseId: ui.caseId, type: $("#doc-type", v).value, name: f.name, date: isoDay(0) });
+    save(); render(); toast(t("saved"));
+  });
+  const nc = $("#nc-form", v);
+  if (nc) {
+    const check = () => {
+      const names = [$("#nc-pl", v).value, $("#nc-df", v).value, $("#nc-cn", v).value].map((s) => s.trim()).filter((s) => s.length >= 3);
+      const hit = names.some((n) => S.cases.some((c) => c.plaintiff.includes(n) || c.defendant.includes(n)));
+      $("#nc-conflict", v).innerHTML = names.length ? `${t("conflict")}: ${hit ? `<b style="color:var(--warn)">${t("conflictFound")}</b>` : t("conflictNone")}` : "";
+    };
+    ["#nc-pl", "#nc-df", "#nc-cn"].forEach((s) => $(s, v).addEventListener("input", check));
+    nc.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const no = parseInt($("#nc-no", v).value, 10), year = parseInt($("#nc-year", v).value, 10);
+      const pl = $("#nc-pl", v).value.trim(), df = $("#nc-df", v).value.trim(), date = $("#nc-date", v).value;
+      if (!no || !year || !pl || !df || !date) { toast(t("fillRequired")); return; }
+      let clientId = null; const cn = $("#nc-cn", v).value.trim();
+      if (cn) { clientId = uid(); S.clients.push({ id: clientId, name: cn, phone: $("#nc-cp", v).value.trim(), nrb: false, consent: $("#nc-consent", v).checked ? new Date().toISOString() : null }); }
+      const purp = $("#nc-purpose", v).value;
+      const id = uid();
+      S.cases.unshift({ id, type: $("#nc-type", v).value, no, year, court: $("#nc-court", v).value, plaintiff: pl, defendant: df, client: clientId, stage: purp, assigned: ["m1"] });
+      S.hearings.push({ id: uid(), caseId: id, date, purpose: purp, outcome: null, note: "", nextId: null });
+      save(); ui.view = "case"; ui.caseId = id; ui.caseTab = "hearings"; render(); toast(t("saved"));
+    });
+  }
+  const tf = $("#task-form", v);
+  if (tf) tf.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const title = $("#tk-title", v).value.trim(); if (!title) { $("#tk-title", v).focus(); return; }
+    const caseId = tf.dataset.case || $("#tk-case", v).value;
+    S.tasks.push({ id: uid(), caseId, title, assignee: $("#tk-who", v).value, due: $("#tk-due", v).value || isoDay(1), done: false });
+    save(); render(); toast(t("saved"));
+  });
+  const lg = $("#lg-add", v);
+  if (lg) lg.addEventListener("click", () => {
+    const amt = parseInt($("#lg-amt", v).value, 10); if (!amt || amt < 1) { $("#lg-amt", v).focus(); return; }
+    S.ledger.push({ id: uid(), caseId: ui.caseId, kind: $("#lg-kind", v).value, amount: amt, date: isoDay(0), note: "" });
+    save(); render(); toast(t("saved"));
+  });
+  const fb = $("#fb-save", v);
+  if (fb) fb.addEventListener("click", () => { const txt = $("#fb", v).value.trim(); if (!txt) return; S.feedback.unshift({ text: txt, at: new Date().toISOString() }); save(); render(); toast(t("saved")); });
+  const pb = $("#print-btn", v); if (pb) pb.addEventListener("click", printDiary);
+  const rb = $("#reset-btn", v); if (rb) rb.addEventListener("click", () => { if (confirm(t("resetConfirm"))) { const lang = S.lang; S = seed(); S.lang = lang; save(); ui.view = "diary"; render(); } });
+}
+
+document.addEventListener("click", (e) => {
+  const nav = e.target.closest("[data-nav]");
+  if (nav) { ui.view = nav.dataset.nav; render(); window.scrollTo(0, 0); return; }
+  const to = e.target.closest("[data-nav-to]");
+  if (to) { e.preventDefault(); ui.view = to.dataset.navTo; render(); window.scrollTo(0, 0); return; }
+  const oc = e.target.closest("[data-open-case]");
+  if (oc) { e.preventDefault(); ui.view = "case"; ui.caseId = oc.dataset.openCase; ui.caseTab = "hearings"; render(); window.scrollTo(0, 0); return; }
+  const r = e.target.closest("[data-range]");
+  if (r) { ui.diaryRange = r.dataset.range; render(); return; }
+  const out = e.target.closest("#view [data-outcome]");
+  if (out) { openOutcome(out.dataset.outcome); return; }
+  const ct = e.target.closest("[data-ctab]");
+  if (ct) { ui.caseTab = ct.dataset.ctab; render(); return; }
+  const dn = e.target.closest("[data-done]");
+  if (dn) { const x = byId(S.tasks, dn.dataset.done); x.done = true; save(); render(); toast(t("saved")); return; }
+  const lang = e.target.closest("[data-lang]");
+  if (lang) { S.lang = lang.dataset.lang; save(); render(); }
+});
+
+S = load() || seed();
+render();
+</script>
+</body>
+</html>
